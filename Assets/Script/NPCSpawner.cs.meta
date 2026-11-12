@@ -1,0 +1,12 @@
+fileFormatVersion: 2
+guid: 31fd07e57808a3e41b7605d2c21b9dc8
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - drowningNpcPrefab: {fileID: 3180068676126239939, guid: 96aaea4e7f33157459c39bf88fc89d81, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
