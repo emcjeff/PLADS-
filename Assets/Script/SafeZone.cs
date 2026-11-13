@@ -41,7 +41,15 @@ public class SafeZone : MonoBehaviour
                 {
                     RescueManager.instance.SurvivorDelivered();
                 }
+
+                
             }
+
+        }
+            if (TutorialTaskManager.instance != null && RescueManager.instance != null)
+        {
+            bool hasMore = RescueManager.instance.deliveredToSafeZone < RescueManager.instance.totalSurvivors;
+            TutorialTaskManager.instance.OnSurvivorsDelivered(hasMore);
         }
 
         Debug.Log($"SUCCESS: Naihatid ang {survivors.Count} survivor(s) nang maayos sa Safe Zone!");

@@ -123,6 +123,12 @@ public class DrowningNPC : MonoBehaviour
         currentStamina = maxStamina;
 
         if (staminaCanvas != null) staminaCanvas.SetActive(true);
+
+        if (TutorialTaskManager.instance != null)
+        {
+            TutorialTaskManager.instance.OnBuoyAttachedToNPC();
+        }
+
     }
 
     void LoseGrip()
@@ -135,6 +141,11 @@ public class DrowningNPC : MonoBehaviour
         if (RescueManager.instance != null)
         {
             RescueManager.instance.StopRescueTimer();
+        }
+
+        if (TutorialTaskManager.instance != null)
+        {
+            TutorialTaskManager.instance.OnSurvivorLost();
         }
 
         if (attachedBuoy != null)
@@ -170,5 +181,11 @@ public class DrowningNPC : MonoBehaviour
         {
             RescueManager.instance.SurvivorSaved();
         }
+
+         if (TutorialTaskManager.instance != null)
+        {
+            TutorialTaskManager.instance.OnSurvivorBoardedBoat();
+        }
+
     }
 }

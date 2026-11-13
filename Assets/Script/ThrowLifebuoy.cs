@@ -90,6 +90,12 @@ public class ThrowLifebuoy : MonoBehaviour
         isReady = false;
         cooldownTimer = cooldownTime;
 
+
+        if (TutorialTaskManager.instance != null)
+        {
+            TutorialTaskManager.instance.OnPlayerThrewBuoy();
+        }
+
         if (cooldownFillImage != null)
         {
             cooldownFillImage.fillAmount = 0f;

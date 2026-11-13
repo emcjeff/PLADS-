@@ -202,15 +202,13 @@ public class BoatController : MonoBehaviour
         }
 
         // Agad ding ilagay ang player sa tamang upuan ng bangka
-        if (player != null)
+        if (TutorialTaskManager.instance != null)
         {
-            player.transform.position = transform.TransformPoint(seatOffset);
-            player.transform.rotation = transform.rotation;
+            TutorialTaskManager.instance.OnPlayerBoardedBoat();
         }
-
-        // Simulan ang emergency mission at ang baha
-        if (RescueManager.instance != null)
+        else if (RescueManager.instance != null)
         {
+            // Fallback kung walang tutorial
             RescueManager.instance.TriggerMissionStart();
         }
     }
