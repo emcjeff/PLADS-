@@ -1799,7 +1799,7 @@ MonoBehaviour:
   maxX: -470
   minZ: 27
   maxZ: 190
-  spawnHeightY: 2
+  spawnHeightY: 0.8
   checkRadius: 1.2
   obstacleLayer:
     serializedVersion: 2
@@ -9457,7 +9457,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1280229836
 RectTransform:
   m_ObjectHideFlags: 0
