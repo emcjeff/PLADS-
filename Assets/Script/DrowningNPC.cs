@@ -1,24 +1,34 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class DrowningNPC : MonoBehaviour
 {
-    public enum NPCState { Drowning, HoldingBuoy, Rescued }
+    public enum NPCState { Drowning, HoldingBuoy, Panicking, Rescued }
 
     [Header("State")]
     public NPCState currentState = NPCState.Drowning;
 
-    [Header("Stamina / Panic Timer")]
-    public float maxStamina = 15f;
+    [Header("Stamina / Grip Settings")]
+    public float maxStamina = 12f;
     public float currentStamina;
     public float pickupDistance = 4.5f;
 
-    [Header("UI Bar References")]
-    public GameObject staminaCanvas;
-    public Slider staminaSlider;
-    public Image fillImage;
+    [Header("Panic Meter Settings")]
+    public int hitsToCalm = 2;               // Ilang bato bago mapawi ang panic
+    private int currentHits = 0;             // Ilang tama na
+    public float panicSwimSpeed = 3f;        // Bilis ng paglangoy habang nagwawala
+    public float panicStruggleSpeed = 10f;
+    private Vector2 randomWanderDirection;
+    private float changeDirectionTimer = 0f;
 
-    [Header("Struggle Animation")]
+    [Header("UI Overhead Meter")]
+    public GameObject staminaCanvas;         // Ang World Space Canvas sa ulo
+    public Slider staminaSlider;             // Ang Slider bar
+    public Image fillImage;                  // Kulay ng bar
+    public TextMeshProUGUI meterStatusText;  // (Optional) Text tulad ng "PANIC!" o "CALM"
+
+    [Header("Normal Struggle")]
     public float struggleSpeed = 4f;
     public float struggleHeight = 0.25f;
 
@@ -51,6 +61,10 @@ public class DrowningNPC : MonoBehaviour
                 HandleHoldingBuoy();
                 break;
 
+            case NPCState.Panicking:
+                HandlePanicking();
+                break;
+
             case NPCState.Rescued:
                 break;
         }
@@ -62,16 +76,13 @@ public class DrowningNPC : MonoBehaviour
         transform.position = new Vector3(startPos.x, newY, startPos.z);
     }
 
+    // 1. STAMINA / GRIP MODE (Green -> Yellow -> Red)
     void HandleHoldingBuoy()
     {
-        if (staminaCanvas != null && mainCam != null)
-        {
-            staminaCanvas.transform.forward = mainCam.transform.forward;
-        }
+        BillboardToCamera();
 
         currentStamina -= Time.deltaTime;
 
-        // IPASA ANG ORAS SA SCREEN HUD TIMER
         if (RescueManager.instance != null)
         {
             RescueManager.instance.UpdateRescueTimer(currentStamina);
@@ -87,6 +98,13 @@ public class DrowningNPC : MonoBehaviour
             fillImage.color = Color.Lerp(Color.red, Color.green, currentStamina / maxStamina);
         }
 
+        if (meterStatusText != null)
+        {
+            meterStatusText.text = "HOLDING ON!";
+            meterStatusText.color = Color.white;
+        }
+
+        // Lapitan ng bangka
         if (boat != null)
         {
             float distanceToBoat = Vector3.Distance(transform.position, boat.transform.position);
@@ -97,18 +115,140 @@ public class DrowningNPC : MonoBehaviour
             }
         }
 
+        // Kapag naubos ang oras -> TRIGGER PANIC METER!
         if (currentStamina <= 0f)
         {
-            LoseGrip();
+            TriggerPanicState();
         }
+    }
+
+    // 2. PANIC METER MODE (Red Pulsing Bar)
+    void HandlePanicking()
+    {
+        BillboardToCamera();
+
+        // Mabilis na pag-alon at paggalaw
+        float newY = startPos.y + Mathf.Sin(Time.time * panicStruggleSpeed) * (struggleHeight * 1.5f);
+
+        changeDirectionTimer -= Time.deltaTime;
+        if (changeDirectionTimer <= 0f)
+        {
+            randomWanderDirection = Random.insideUnitCircle.normalized;
+            changeDirectionTimer = Random.Range(1f, 2f);
+        }
+
+        Vector3 moveOffset = new Vector3(randomWanderDirection.x, 0f, randomWanderDirection.y) * panicSwimSpeed * Time.deltaTime;
+        transform.position += moveOffset;
+        transform.position = new Vector3(transform.position.x, newY, transform.position.z);
+
+        // PULSING EFFECT SA PANIC METER (Kumikislap na Pula/Orange)
+        if (fillImage != null)
+        {
+            float pulse = Mathf.PingPong(Time.time * 6f, 1f);
+            fillImage.color = Color.Lerp(Color.red, new Color(1f, 0.4f, 0f), pulse);
+        }
+    }
+
+    void TriggerPanicState()
+    {
+        currentState = NPCState.Panicking;
+        currentHits = 0;
+
+        // Tanggalin ang salbabida
+        if (attachedBuoy != null) Destroy(attachedBuoy);
+
+        // ILITAW ANG PANIC METER (100% Full Panic)
+        if (staminaCanvas != null) staminaCanvas.SetActive(true);
+        if (staminaSlider != null) staminaSlider.value = 1f;
+
+        if (meterStatusText != null)
+        {
+            meterStatusText.text = "⚠️ PANICKING!";
+            meterStatusText.color = Color.red;
+        }
+
+        if (TutorialTaskManager.instance != null)
+        {
+            TutorialTaskManager.instance.taskText.text = $"⚠️ NAG-PANIC ANG SURVIVOR! Batuhin ng {hitsToCalm} beses para ma-ubos ang Panic Meter!";
+            TutorialTaskManager.instance.taskText.color = Color.red;
+        }
+
+        Debug.Log("PUMASOK SA PANIC STATE ANG NPC!");
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (currentState == NPCState.Drowning && other.CompareTag("Lifebuoy"))
+        bool isBuoy = other.CompareTag("Lifebuoy") || other.GetComponentInParent<Lifebuoy>() != null;
+        if (!isBuoy) return;
+
+        GameObject buoyObj = other.GetComponentInParent<Lifebuoy>() != null 
+            ? other.GetComponentInParent<Lifebuoy>().gameObject 
+            : other.gameObject;
+
+        if (currentState == NPCState.Drowning)
         {
-            GrabBuoy(other.gameObject);
+            GrabBuoy(buoyObj);
         }
+        else if (currentState == NPCState.Panicking)
+        {
+            HandlePanicHit(buoyObj);
+        }
+    }
+
+    // BAWAS SA PANIC METER BAWAT TAMA NG SALBABIDA
+    void HandlePanicHit(GameObject buoyObj)
+    {
+        currentHits++;
+        Destroy(buoyObj);
+
+        // Calculate bawas sa Panic Meter (hal. 2 hits = bawas 50% kada bato)
+        float panicRemaining = 1f - ((float)currentHits / hitsToCalm);
+
+        if (staminaSlider != null)
+        {
+            staminaSlider.value = panicRemaining;
+        }
+
+        int remainingHits = hitsToCalm - currentHits;
+
+        if (remainingHits > 0)
+        {
+            if (meterStatusText != null)
+            {
+                meterStatusText.text = $"PANIC: {remainingHits} HIT LEFT!";
+            }
+
+            if (TutorialTaskManager.instance != null)
+            {
+                TutorialTaskManager.instance.taskText.text = $"⚠️ TUMAMA! {remainingHits} bato na lang bago kumalma!";
+                TutorialTaskManager.instance.taskText.color = Color.yellow;
+            }
+        }
+        else
+        {
+            // UBOS NA ANG PANIC METER -> KUMALMA NA!
+            CalmDownFromPanic();
+        }
+    }
+
+    void CalmDownFromPanic()
+    {
+        currentState = NPCState.HoldingBuoy;
+        startPos = transform.position;
+        currentStamina = maxStamina;
+
+        if (meterStatusText != null)
+        {
+            meterStatusText.text = "CALMED DOWN!";
+            meterStatusText.color = Color.green;
+        }
+
+        if (TutorialTaskManager.instance != null)
+        {
+            TutorialTaskManager.instance.OnBuoyAttachedToNPC();
+        }
+
+        Debug.Log("UBOS NA ANG PANIC! Kumalma na siya!");
     }
 
     void GrabBuoy(GameObject buoy)
@@ -128,30 +268,6 @@ public class DrowningNPC : MonoBehaviour
         {
             TutorialTaskManager.instance.OnBuoyAttachedToNPC();
         }
-
-    }
-
-    void LoseGrip()
-    {
-        currentState = NPCState.Drowning;
-
-        if (staminaCanvas != null) staminaCanvas.SetActive(false);
-
-        // Itigil ang screen timer
-        if (RescueManager.instance != null)
-        {
-            RescueManager.instance.StopRescueTimer();
-        }
-
-        if (TutorialTaskManager.instance != null)
-        {
-            TutorialTaskManager.instance.OnSurvivorLost();
-        }
-
-        if (attachedBuoy != null)
-        {
-            Destroy(attachedBuoy);
-        }
     }
 
     void BoardBoat()
@@ -161,31 +277,18 @@ public class DrowningNPC : MonoBehaviour
         if (staminaCanvas != null) staminaCanvas.SetActive(false);
         if (col != null) col.enabled = false;
 
-        // Itigil ang screen timer
-        if (RescueManager.instance != null)
-        {
-            RescueManager.instance.StopRescueTimer();
-        }
+        if (RescueManager.instance != null) RescueManager.instance.StopRescueTimer();
+        if (attachedBuoy != null) Destroy(attachedBuoy);
+        if (boat != null) boat.AddPassenger(transform);
+        if (RescueManager.instance != null) RescueManager.instance.SurvivorSaved();
+        if (TutorialTaskManager.instance != null) TutorialTaskManager.instance.OnSurvivorBoardedBoat();
+    }
 
-        if (attachedBuoy != null)
+    void BillboardToCamera()
+    {
+        if (staminaCanvas != null && mainCam != null)
         {
-            Destroy(attachedBuoy);
+            staminaCanvas.transform.forward = mainCam.transform.forward;
         }
-
-        if (boat != null)
-        {
-            boat.AddPassenger(transform);
-        }
-
-        if (RescueManager.instance != null)
-        {
-            RescueManager.instance.SurvivorSaved();
-        }
-
-         if (TutorialTaskManager.instance != null)
-        {
-            TutorialTaskManager.instance.OnSurvivorBoardedBoat();
-        }
-
     }
 }

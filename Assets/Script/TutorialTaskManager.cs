@@ -7,21 +7,25 @@ public class TutorialTaskManager : MonoBehaviour
 
     public enum TaskStep
     {
-        MoveWASD,          // Task 1: Lakad
-        ThrowPractice,     // Task 2: Praktis bato
-        BoardBoat,         // Task 3: Sakay sa bangka
-        SearchSurvivors,   // Task 4: Hanapin ang nalulunod
-        ApproachSurvivor,  // Task 5: Lapitan ang nalulunod gamit ang bangka
-        DeliverToSafeZone, // Task 6: Ihatid sa Safe Zone
-        AllTasksComplete   // Mission Success
+        MoveWASD,          // Task 1
+        ThrowPractice,     // Task 2
+        BoardBoat,         // Task 3
+        SearchSurvivors,   // Task 4
+        ApproachSurvivor,  // Task 5
+        DeliverToSafeZone, // Task 6
+        AllTasksComplete   // Win
     }
+
+    [Header("Level Configuration")]
+    [Tooltip("I-check ito sa Level 2 para lampasan ang Tasks 1-3!")]
+    public bool skipTutorial = false;
 
     [Header("Current Progress")]
     public TaskStep currentStep = TaskStep.MoveWASD;
 
     [Header("UI Reference")]
-    public TextMeshProUGUI taskText;      // Text para sa instruction
-    public GameObject taskPanel;          // Panel box sa screen
+    public TextMeshProUGUI taskText;
+    public GameObject taskPanel;
 
     private float walkTimer = 0f;
     private float requiredWalkTime = 1.5f;
@@ -33,6 +37,16 @@ public class TutorialTaskManager : MonoBehaviour
 
     void Start()
     {
+        // KUNG LEVEL 2 (Skip Tutorial): Diretso agad sa Task 4
+        if (skipTutorial)
+        {
+            currentStep = TaskStep.SearchSurvivors;
+        }
+        else
+        {
+            currentStep = TaskStep.MoveWASD;
+        }
+
         UpdateTaskUI();
     }
 
@@ -60,7 +74,6 @@ public class TutorialTaskManager : MonoBehaviour
         }
     }
 
-    // 1. Kapag nagbato ng salbabida sa tutorial
     public void OnPlayerThrewBuoy()
     {
         if (currentStep == TaskStep.ThrowPractice)
@@ -70,15 +83,15 @@ public class TutorialTaskManager : MonoBehaviour
         }
     }
 
-    // 2. Kapag sumakay na sa bangka
+    // INAYOS DITO: GAGANA NA PAREHO SA LEVEL 1 AT LEVEL 2
     public void OnPlayerBoardedBoat()
     {
-        if (currentStep == TaskStep.BoardBoat)
+        if (currentStep == TaskStep.BoardBoat || skipTutorial)
         {
             currentStep = TaskStep.SearchSurvivors;
             UpdateTaskUI();
 
-            // Simulan ang baha at mission popup
+            // SIMULAN ANG BAHA, NPC SPAWN, AT MISSION TRACKER!
             if (RescueManager.instance != null)
             {
                 RescueManager.instance.TriggerMissionStart();
@@ -86,32 +99,28 @@ public class TutorialTaskManager : MonoBehaviour
         }
     }
 
-    // 3. KAPAG NATAMAAN NG SALBABIDA ANG NALULUNOD
     public void OnBuoyAttachedToNPC()
     {
         currentStep = TaskStep.ApproachSurvivor;
         UpdateTaskUI();
     }
 
-    // 4. KAPAG BUMITAW ANG NPC DAHIL NAUBUSAN NG ORAS
     public void OnSurvivorLost()
     {
         currentStep = TaskStep.SearchSurvivors;
         if (taskText != null)
         {
-            taskText.text = "Bumitaw ang survivor! Batuhan ulit ng salbabida!";
+            taskText.text = "⚠️ Bumitaw ang survivor! Batuhan ulit ng salbabida!";
             taskText.color = Color.red;
         }
     }
 
-    // 5. KAPAG NAIAHON / NAISAKAY NA SA BANGKA
     public void OnSurvivorBoardedBoat()
     {
         currentStep = TaskStep.DeliverToSafeZone;
         UpdateTaskUI();
     }
 
-    // 6. KAPAG NAIBABA SA SAFE ZONE
     public void OnSurvivorsDelivered(bool hasMoreSurvivors)
     {
         if (hasMoreSurvivors)
@@ -164,7 +173,7 @@ public class TutorialTaskManager : MonoBehaviour
                 break;
 
             case TaskStep.AllTasksComplete:
-                taskText.text = "MISSION ACCOMPLISHED: Nailigtas mo ang lahat!";
+                taskText.text = "🎉 MISSION ACCOMPLISHED: Nailigtas mo ang lahat!";
                 taskText.color = Color.green;
                 break;
         }

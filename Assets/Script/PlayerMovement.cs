@@ -3,6 +3,7 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour
 {
     public CharacterController controller;
+    public Animator anim;
     public Transform cam; // Reference sa Main Camera
 
     public float speed = 6f;
@@ -34,8 +35,15 @@ public class PlayerMovement : MonoBehaviour
         float vertical = Input.GetAxisRaw("Vertical");     // W / S
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
 
+        // DAGDAG: Pagsusuri kung gumagalaw ang player para sa Animation
+        bool isMoving = direction.magnitude >= 0.1f;
+        if (anim != null)
+        {
+            anim.SetBool("isWalking", isMoving);
+        }
+
         // 3. Paggalaw at Pagharap (Rotation)
-        if (direction.magnitude >= 0.1f)
+        if (isMoving)
         {
             // Kalkulahin ang angulo base sa kung saan nakaharap ang Camera
             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cam.eulerAngles.y;

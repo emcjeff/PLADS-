@@ -6,6 +6,10 @@ public class BoatController : MonoBehaviour
 {
     public Rigidbody rb;
 
+    [Header("Level 2 Configuration")]
+    [Tooltip("I-check ito sa Level 2 para simula pa lang ay nakasakay na agad ang player sa bangka!")]
+    public bool autoBoardOnStart = false;
+
     [Header("Engine & Speed")]
     public float motorForce = 1500f;
     public float steerSpeed = 60f;
@@ -14,14 +18,18 @@ public class BoatController : MonoBehaviour
 
     [Header("Interaction Settings")]
     public float interactDistance = 4f;
-    public Vector3 seatOffset = new Vector3(0f, 1f, 0f);
+    public Vector3 seatOffset = new Vector3(0f, 0.1f, 0f); // Lapat ang sapatos ng 3D character
     public float exitDistance = 2.5f;
 
     [Header("Random Spawning")]
-    public Transform[] spawnPoints; // MGA RANDOM POSITIONS KUNG SAAN PWEDENG LUMITAW ANG BANGKA
+    public Transform[] spawnPoints;
 
     [Header("Passengers / Rescued")]
     public List<Transform> rescuedPassengers = new List<Transform>();
+    [Tooltip("Pwesto sa likod o harap ng player sa bangka (hal. -0.6)")]
+    public float passengerZOffset = -0.6f;
+    [Tooltip("Agwat pakaliwa at pakanan ng mga pasahero")]
+    public float passengerXOffset = 0.4f;
 
     [Header("UI Prompts")]
     public GameObject ridePromptUI;
@@ -42,11 +50,24 @@ public class BoatController : MonoBehaviour
         if (ridePromptUI != null) ridePromptUI.SetActive(false);
         if (exitPromptUI != null) exitPromptUI.SetActive(false);
 
+        // 1. Hanapin ang Player gamit ang Tag
         player = GameObject.FindGameObjectWithTag("Player");
+
+        // 2. Fallback: Hanapin gamit ang CharacterController kung sakaling hindi naka-tag
+        if (player == null)
+        {
+            CharacterController cc = Object.FindAnyObjectByType<CharacterController>();
+            if (cc != null)
+            {
+                player = cc.gameObject;
+            }
+        }
+
         if (player != null)
         {
             playerController = player.GetComponent<CharacterController>();
 
+            // Hanapin ang movement script pero huwag idadamay ang ThrowLifebuoy
             MonoBehaviour[] scripts = player.GetComponents<MonoBehaviour>();
             foreach (var s in scripts)
             {
@@ -58,8 +79,15 @@ public class BoatController : MonoBehaviour
             }
         }
 
+        // Water drag settings (Unity 6 damping)
         rb.linearDamping = waterDrag;
         rb.angularDamping = 2.5f;
+
+        // KUNG LEVEL 2: Awtomatikong isakay agad ang player pagkabukas ng eksena
+        if (autoBoardOnStart)
+        {
+            Invoke(nameof(EnterBoat), 0.2f);
+        }
     }
 
     void Update()
@@ -68,6 +96,7 @@ public class BoatController : MonoBehaviour
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.transform.position);
 
+        // UI Prompt logic
         if (!isRiding)
         {
             bool isNear = distanceToPlayer <= interactDistance;
@@ -80,6 +109,7 @@ public class BoatController : MonoBehaviour
             if (exitPromptUI != null) exitPromptUI.SetActive(true);
         }
 
+        // Pagsakay at Pagbaba (Pindot ng E)
         if (Input.GetKeyDown(KeyCode.E))
         {
             if (!isRiding && distanceToPlayer <= interactDistance)
@@ -92,6 +122,7 @@ public class BoatController : MonoBehaviour
             }
         }
 
+        // WASD Input para sa bangka
         if (isRiding)
         {
             verticalInput = Input.GetAxis("Vertical");
@@ -115,23 +146,30 @@ public class BoatController : MonoBehaviour
 
     void LateUpdate()
     {
-        // 1. Manatiling nakapwesto ang player sa loob ng bangka
+        // 1. Pwesto ng player habang nagda-drive
         if (isRiding && player != null)
         {
             player.transform.position = transform.TransformPoint(seatOffset);
             player.transform.rotation = transform.rotation;
         }
 
-        // 2. Pasahero sa likod
+        // 2. Pwesto ng mga na-rescue na pasahero sa deck ng bangka
         for (int i = 0; i < rescuedPassengers.Count; i++)
         {
             if (rescuedPassengers[i] != null)
             {
-                float xOffset = (i % 2 == 0) ? -0.5f : 0.5f;
-                float zOffset = -1.2f - ((i / 2) * 0.9f);
-                Vector3 passengerOffset = new Vector3(xOffset, seatOffset.y, zOffset);
+                // Salit-salit sa kaliwa at kanan
+                float x = (i % 2 == 0) ? -passengerXOffset : passengerXOffset;
+                // Agwat paatras sa likod ng bawat pares
+                float z = passengerZOffset - ((i / 2) * 0.7f);
 
-                rescuedPassengers[i].position = transform.TransformPoint(passengerOffset);
+                // NORMALIZED VECTORS: Hindi apektado ng Scale ng bangka mo!
+                Vector3 targetPos = transform.position 
+                    + (transform.right.normalized * x) 
+                    + (transform.forward.normalized * z) 
+                    + (Vector3.up * seatOffset.y);
+
+                rescuedPassengers[i].position = targetPos;
                 rescuedPassengers[i].rotation = transform.rotation;
             }
         }
@@ -172,27 +210,34 @@ public class BoatController : MonoBehaviour
         rb.MoveRotation(rb.rotation * turnRotation);
     }
 
-    void EnterBoat()
+    public void EnterBoat()
     {
         isRiding = true;
 
         if (playerController != null) playerController.enabled = false;
         if (movementScript != null) movementScript.enabled = false;
 
-        // --- RANDOM SPAWN LOGIC ---
+        // SIGURADUHING IDLE POSE ANG CHARACTER (Bawal mag-walk habang nasa bangka)
+        if (player != null)
+        {
+            Animator anim = player.GetComponentInChildren<Animator>();
+            if (anim != null)
+            {
+                anim.SetBool("isWalking", false);
+            }
+        }
+
+        // Random Spawning kapag sumakay
         if (spawnPoints != null && spawnPoints.Length > 0)
         {
-            // Pumili ng random index mula sa listahan
             int randomIndex = Random.Range(0, spawnPoints.Length);
             Transform randomPoint = spawnPoints[randomIndex];
 
             if (randomPoint != null)
             {
-                // I-teleport ang bangka sa napiling pwesto
                 transform.position = randomPoint.position;
                 transform.rotation = randomPoint.rotation;
 
-                // I-reset ang velocity para hindi bumulusok pagka-teleport
                 if (rb != null)
                 {
                     rb.linearVelocity = Vector3.zero;
@@ -201,24 +246,33 @@ public class BoatController : MonoBehaviour
             }
         }
 
-        // Agad ding ilagay ang player sa tamang upuan ng bangka
+        // I-pwesto agad ang player sa tamang coordinate
+        if (player != null)
+        {
+            player.transform.position = transform.TransformPoint(seatOffset);
+            player.transform.rotation = transform.rotation;
+        }
+
+        // Simulan ang Tutorial o Emergency Mission
         if (TutorialTaskManager.instance != null)
         {
             TutorialTaskManager.instance.OnPlayerBoardedBoat();
         }
         else if (RescueManager.instance != null)
         {
-            // Fallback kung walang tutorial
             RescueManager.instance.TriggerMissionStart();
         }
     }
 
-    void ExitBoat()
+    public void ExitBoat()
     {
         isRiding = false;
 
         Vector3 dropPosition = transform.position + (transform.right * exitDistance) + (Vector3.up * 0.5f);
-        player.transform.position = dropPosition;
+        if (player != null)
+        {
+            player.transform.position = dropPosition;
+        }
 
         if (playerController != null) playerController.enabled = true;
         if (movementScript != null) movementScript.enabled = true;

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using TMPro;
 
 public class RescueManager : MonoBehaviour
@@ -7,20 +8,23 @@ public class RescueManager : MonoBehaviour
 
     [Header("Mission Status")]
     public bool isMissionStarted = false;
-    public int totalSurvivors = 0;
+    public int totalSurvivors = 3;           // Default bilang kung ilan ang i-spawn
     public int rescuedOnBoat = 0;
     public int deliveredToSafeZone = 0;
 
-    [Header("Mission Start UI")]
+    [Header("Mission Elements")]
+    public GameObject floodWaterObject;
+    public GameObject safeZoneObject;
     public GameObject missionStartBox;
 
-    [Header("Flood Water")]
-    public GameObject floodWaterObject; // DITO ILALAGAY ANG FLOODWATER OBJECT
-
-    [Header("In-Game HUD References")]
+    [Header("In-Game HUD")]
     public TextMeshProUGUI statusText;
     public TextMeshProUGUI countdownText;
+
+    [Header("Win UI Screen")]
     public GameObject winScreenUI;
+    public TextMeshProUGUI winSummaryText;
+    public string nextLevelSceneName = "";
 
     void Awake()
     {
@@ -29,32 +33,35 @@ public class RescueManager : MonoBehaviour
 
     void Start()
     {
-        DrowningNPC[] npcs = Object.FindObjectsByType<DrowningNPC>(FindObjectsSortMode.None);
-        totalSurvivors = npcs.Length;
-
-        // 1. ITAGO ANG BAHA SA SIMULA PARA TUYO ANG KALSADA
-        if (floodWaterObject != null)
-        {
-            floodWaterObject.SetActive(false);
-        }
-
+        if (floodWaterObject != null) floodWaterObject.SetActive(false);
+        if (safeZoneObject != null) safeZoneObject.SetActive(false);
         if (missionStartBox != null) missionStartBox.SetActive(false);
-        if (winScreenUI != null) winScreenUI.SetActive(false);
         if (countdownText != null) countdownText.gameObject.SetActive(false);
         if (statusText != null) statusText.gameObject.SetActive(false);
+        if (winScreenUI != null) winScreenUI.SetActive(false);
+
+        // Kuhanin ang totoong bilang kung ilang NPC ang nakaset sa spawner
+        if (NPCSpawner.instance != null)
+        {
+            totalSurvivors = NPCSpawner.instance.totalNpcToSpawn;
+        }
     }
 
-    // TATAWAGIN ITO KAPAG SUMAKAY SA BANGKA ANG PLAYER
     public void TriggerMissionStart()
     {
         if (isMissionStarted) return;
 
-        // 2. PALITAWIN AGAD ANG BAHA!
-        if (floodWaterObject != null)
+        if (floodWaterObject != null) floodWaterObject.SetActive(true);
+        if (safeZoneObject != null) safeZoneObject.SetActive(true);
+
+        // 1. I-spawn ang mga tao
+        if (NPCSpawner.instance != null)
         {
-            floodWaterObject.SetActive(true);
+            NPCSpawner.instance.SpawnRandomNPCs();
+            totalSurvivors = NPCSpawner.instance.totalNpcToSpawn;
         }
 
+        // 2. Ipakita ang Mission Box
         if (missionStartBox != null)
         {
             missionStartBox.SetActive(true);
@@ -65,14 +72,22 @@ public class RescueManager : MonoBehaviour
         Cursor.visible = true;
     }
 
+    // Tatawagin pagkatapos mag-spawn
+    public void InitializeMissionStats()
+    {
+        DrowningNPC[] npcs = Object.FindObjectsByType<DrowningNPC>(FindObjectsSortMode.None);
+        if (npcs.Length > 0)
+        {
+            totalSurvivors = npcs.Length;
+        }
+        UpdateUI();
+    }
+
     public void OnClickConfirmMission()
     {
         isMissionStarted = true;
 
-        if (missionStartBox != null)
-        {
-            missionStartBox.SetActive(false);
-        }
+        if (missionStartBox != null) missionStartBox.SetActive(false);
 
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.Locked;
@@ -83,8 +98,6 @@ public class RescueManager : MonoBehaviour
             statusText.gameObject.SetActive(true);
             UpdateUI();
         }
-
-        Debug.Log("MISSION ACCEPTED! May baha na!");
     }
 
     public void UpdateRescueTimer(float timeRemaining)
@@ -111,10 +124,7 @@ public class RescueManager : MonoBehaviour
 
     public void StopRescueTimer()
     {
-        if (countdownText != null)
-        {
-            countdownText.gameObject.SetActive(false);
-        }
+        if (countdownText != null) countdownText.gameObject.SetActive(false);
     }
 
     public void SurvivorSaved()
@@ -129,7 +139,8 @@ public class RescueManager : MonoBehaviour
         deliveredToSafeZone++;
         UpdateUI();
 
-        if (deliveredToSafeZone >= totalSurvivors && totalSurvivors > 0)
+        // PANALO LANG KAPAG: May na-rescue (> 0) AT pantay o lumagpas sa totalSurvivors!
+        if (totalSurvivors > 0 && deliveredToSafeZone >= totalSurvivors)
         {
             MissionComplete();
         }
@@ -139,7 +150,7 @@ public class RescueManager : MonoBehaviour
     {
         if (statusText != null && isMissionStarted)
         {
-            if (deliveredToSafeZone >= totalSurvivors && totalSurvivors > 0)
+            if (totalSurvivors > 0 && deliveredToSafeZone >= totalSurvivors)
             {
                 statusText.text = "All Survivors are Safe!";
             }
@@ -156,8 +167,65 @@ public class RescueManager : MonoBehaviour
 
     void MissionComplete()
     {
-        if (winScreenUI != null) winScreenUI.SetActive(true);
         StopRescueTimer();
-        Debug.Log("MISSION SUCCESS!");
+
+        // 1. Ipakita ang Win Screen Panel
+        if (winScreenUI != null)
+        {
+            winScreenUI.SetActive(true);
+        }
+
+        // 2. I-set ang text
+        if (winSummaryText != null)
+        {
+            winSummaryText.text = $"Nailigtas mo ang lahat ng {totalSurvivors} survivors!";
+        }
+
+        // 3. I-update ang tutorial task sa tagumpay
+        if (TutorialTaskManager.instance != null)
+        {
+            TutorialTaskManager.instance.OnSurvivorsDelivered(false);
+        }
+
+        // 4. Freeze laro at ilabas ang mouse
+        Time.timeScale = 0f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        Debug.Log("TALAGANG PANALO NA!");
+    }
+
+    // --- BUTTONS ---
+    public void LoadNextLevel()
+    {
+        Time.timeScale = 1f;
+        if (!string.IsNullOrEmpty(nextLevelSceneName))
+        {
+            SceneManager.LoadScene(nextLevelSceneName);
+        }
+        else
+        {
+            int nextIndex = SceneManager.GetActiveScene().buildIndex + 1;
+            if (nextIndex < SceneManager.sceneCountInBuildSettings)
+            {
+                SceneManager.LoadScene(nextIndex);
+            }
+            else
+            {
+                SceneManager.LoadScene("MainMenu");
+            }
+        }
+    }
+
+    public void RestartCurrentLevel()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    public void ReturnToMainMenu()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("MainMenu");
     }
 }
