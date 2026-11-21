@@ -8,23 +8,23 @@ public class RescueManager : MonoBehaviour
 
     [Header("Mission Status")]
     public bool isMissionStarted = false;
-    public int totalSurvivors = 3;           // Default bilang kung ilan ang i-spawn
-    public int rescuedOnBoat = 0;
-    public int deliveredToSafeZone = 0;
+    public int totalSurvivors = 3;           // Bilang ng mga ililigtas
+    public int rescuedOnBoat = 0;           // Ilan na ang nasa bangka
+    public int deliveredToSafeZone = 0;     // Ilan na ang naibaba sa Safe Zone
 
-    [Header("Mission Elements")]
-    public GameObject floodWaterObject;
-    public GameObject safeZoneObject;
-    public GameObject missionStartBox;
+    [Header("Mission Elements (Lilitaw sa Pagsakay)")]
+    public GameObject floodWaterObject;      // Ang Tubig-Baha
+    public GameObject safeZoneObject;        // Ang Safe Zone / Pantalan
+    public GameObject missionStartBox;       // Emergency Briefing Box
 
-    [Header("In-Game HUD")]
-    public TextMeshProUGUI statusText;
-    public TextMeshProUGUI countdownText;
+    [Header("In-Game HUD References")]
+    public TextMeshProUGUI statusText;       // "Delivered: 0 / 3 Survivors"
+    public TextMeshProUGUI countdownText;    // Overhead / Screen Timer
 
     [Header("Win UI Screen")]
-    public GameObject winScreenUI;
-    public TextMeshProUGUI winSummaryText;
-    public string nextLevelSceneName = "";
+    public GameObject winScreenUI;           // Win Screen Panel
+    public TextMeshProUGUI winSummaryText;   // Mensahe sa Win Screen
+    public string nextLevelSceneName = "";   // Pangalan ng Level 2 (hal. "Level2")
 
     void Awake()
     {
@@ -33,6 +33,7 @@ public class RescueManager : MonoBehaviour
 
     void Start()
     {
+        // 1. Itago ang lahat ng mission elements sa simula (tuyo at malinis ang kalsada)
         if (floodWaterObject != null) floodWaterObject.SetActive(false);
         if (safeZoneObject != null) safeZoneObject.SetActive(false);
         if (missionStartBox != null) missionStartBox.SetActive(false);
@@ -40,39 +41,48 @@ public class RescueManager : MonoBehaviour
         if (statusText != null) statusText.gameObject.SetActive(false);
         if (winScreenUI != null) winScreenUI.SetActive(false);
 
-        // Kuhanin ang totoong bilang kung ilang NPC ang nakaset sa spawner
+        // Kuhanin ang bilang ng tao mula sa NPCSpawner kung meron
         if (NPCSpawner.instance != null)
         {
             totalSurvivors = NPCSpawner.instance.totalNpcToSpawn;
         }
     }
 
+    // TATAWAGIN ITO KAPAG SUMAKAY NA SA BANGKA ANG PLAYER
     public void TriggerMissionStart()
     {
         if (isMissionStarted) return;
 
+        // 1. Palitawin ang baha at ang Safe Zone
         if (floodWaterObject != null) floodWaterObject.SetActive(true);
         if (safeZoneObject != null) safeZoneObject.SetActive(true);
 
-        // 1. I-spawn ang mga tao
+        // 2. I-spawn ang mga nalulunod (NPCs)
         if (NPCSpawner.instance != null)
         {
             NPCSpawner.instance.SpawnRandomNPCs();
             totalSurvivors = NPCSpawner.instance.totalNpcToSpawn;
         }
 
-        // 2. Ipakita ang Mission Box
+        // 3. I-spawn ang mga lumulutang na basura at hazards (Debris)
+        if (DebrisSpawner.instance != null)
+        {
+            DebrisSpawner.instance.SpawnAllDebris();
+        }
+
+        // 4. Ipakita ang Emergency Briefing Box
         if (missionStartBox != null)
         {
             missionStartBox.SetActive(true);
         }
 
+        // I-pause ang laro at ilabas ang mouse para mapindot ang "OK"
         Time.timeScale = 0f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
 
-    // Tatawagin pagkatapos mag-spawn
+    // Tinatawag ng NPCSpawner kapag tapos na mag-spawn para tama ang bilang
     public void InitializeMissionStats()
     {
         DrowningNPC[] npcs = Object.FindObjectsByType<DrowningNPC>(FindObjectsSortMode.None);
@@ -83,23 +93,32 @@ public class RescueManager : MonoBehaviour
         UpdateUI();
     }
 
+    // TATAWAGIN NG "OK" BUTTON SA BRIEFING BOX
     public void OnClickConfirmMission()
     {
         isMissionStarted = true;
 
-        if (missionStartBox != null) missionStartBox.SetActive(false);
+        if (missionStartBox != null)
+        {
+            missionStartBox.SetActive(false);
+        }
 
+        // Ibalik ang takbo ng laro at i-lock ulit ang cursor
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
+        // Ipakita na ang top status HUD
         if (statusText != null)
         {
             statusText.gameObject.SetActive(true);
             UpdateUI();
         }
+
+        Debug.Log("RESCUE MISSION OFFICIALLY STARTED!");
     }
 
+    // UPDATE SA COUNTDOWN TIMER
     public void UpdateRescueTimer(float timeRemaining)
     {
         if (!isMissionStarted) return;
@@ -124,9 +143,13 @@ public class RescueManager : MonoBehaviour
 
     public void StopRescueTimer()
     {
-        if (countdownText != null) countdownText.gameObject.SetActive(false);
+        if (countdownText != null)
+        {
+            countdownText.gameObject.SetActive(false);
+        }
     }
 
+    // KAPAG NAIAHON ANG TAO SA BANGKA
     public void SurvivorSaved()
     {
         rescuedOnBoat++;
@@ -134,12 +157,13 @@ public class RescueManager : MonoBehaviour
         UpdateUI();
     }
 
+    // KAPAG NAIBABA ANG TAO SA SAFEZONE
     public void SurvivorDelivered()
     {
         deliveredToSafeZone++;
         UpdateUI();
 
-        // PANALO LANG KAPAG: May na-rescue (> 0) AT pantay o lumagpas sa totalSurvivors!
+        // Panalo lang kapag naihatid na LAHAT sa Safe Zone!
         if (totalSurvivors > 0 && deliveredToSafeZone >= totalSurvivors)
         {
             MissionComplete();
@@ -175,36 +199,40 @@ public class RescueManager : MonoBehaviour
             winScreenUI.SetActive(true);
         }
 
-        // 2. I-set ang text
+        // 2. I-set ang buod ng tagumpay
         if (winSummaryText != null)
         {
             winSummaryText.text = $"Nailigtas mo ang lahat ng {totalSurvivors} survivors!";
         }
 
-        // 3. I-update ang tutorial task sa tagumpay
+        // 3. I-update ang task text sa tagumpay
         if (TutorialTaskManager.instance != null)
         {
             TutorialTaskManager.instance.OnSurvivorsDelivered(false);
         }
 
-        // 4. Freeze laro at ilabas ang mouse
+        // 4. I-freeze ang laro at ilabas ang mouse para makapindot sa buttons
         Time.timeScale = 0f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        Debug.Log("TALAGANG PANALO NA!");
+        Debug.Log("MISSION SUCCESS: Lahat ay ligtas na!");
     }
 
-    // --- BUTTONS ---
+    // --- WIN SCREEN BUTTON FUNCTIONS ---
+
     public void LoadNextLevel()
     {
         Time.timeScale = 1f;
+
+        // Kung may inilagay na pangalan ng next scene (hal. "Level2")
         if (!string.IsNullOrEmpty(nextLevelSceneName))
         {
             SceneManager.LoadScene(nextLevelSceneName);
         }
         else
         {
+            // O lilipat sa susunod na index sa Build Settings
             int nextIndex = SceneManager.GetActiveScene().buildIndex + 1;
             if (nextIndex < SceneManager.sceneCountInBuildSettings)
             {
