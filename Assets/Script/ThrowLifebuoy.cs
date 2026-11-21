@@ -1,31 +1,29 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro; // TextMeshPro para sa seconds text
+using TMPro;
 
 public class ThrowLifebuoy : MonoBehaviour
 {
     [Header("References")]
     public Transform cam;
-    public Transform throwPoint;
     public GameObject lifebuoyPrefab;
 
     [Header("Throw Settings")]
-    public float throwForce = 18f;
-    public float throwUpwardForce = 3f;
+    public float throwForce = 22f;          // Tinaasan natin para talagang lumipad paharap
+    public float throwUpwardForce = 4f;     // Arc ng bato pataas
+    public float lifebuoyDuration = 5f;     // Ilang segundo bago mawala ang salbabida
+
+    [Header("Rotation Fix (Nakahiga)")]
+    public Vector3 modelRotationOffset = new Vector3(90f, 0f, 0f);
 
     [Header("Cooldown Settings")]
-    public float cooldownTime = 3f;      // Ilang segundo ang cooldown
+    public float cooldownTime = 2f;
     private float cooldownTimer = 0f;
     private bool isReady = true;
 
     [Header("UI Cooldown")]
-    public Image cooldownFillImage;      // Ang CooldownIcon
-    public TextMeshProUGUI cooldownText; // ANG BAGONG TEXT PARA SA SECONDS (hal. 2.5s)
-    public GameObject notReadyPrompt;    // (Optional)
-
-    [Header("Spin Effect")]
-    public bool spinLikeFrisbee = true;
-    public float spinSpeed = 12f;
+    public Image cooldownFillImage;
+    public TextMeshProUGUI cooldownText;
 
     void Start()
     {
@@ -34,82 +32,72 @@ public class ThrowLifebuoy : MonoBehaviour
             cam = Camera.main.transform;
         }
 
-        if (notReadyPrompt != null) notReadyPrompt.SetActive(false);
-
-        // Nakatago ang countdown text sa simula dahil ready na agad
         if (cooldownText != null) cooldownText.gameObject.SetActive(false);
     }
 
     void Update()
     {
-        // 1. Cooldown computation
+        if (Cursor.lockState != CursorLockMode.Locked) return;
+
         if (!isReady)
         {
             cooldownTimer -= Time.deltaTime;
 
-            // I-update ang radial fill bar kung meron
             if (cooldownFillImage != null)
             {
                 cooldownFillImage.fillAmount = 1f - (cooldownTimer / cooldownTime);
             }
 
-            // I-UPDATE ANG SECONDS TEXT SA SCREEN
             if (cooldownText != null)
             {
                 if (!cooldownText.gameObject.activeSelf) cooldownText.gameObject.SetActive(true);
-                // "F1" ibig sabihin may 1 decimal place (halimbawa: 2.8s, 1.4s)
                 cooldownText.text = cooldownTimer.ToString("F1") + "s";
             }
 
-            // Kapag tapos na ang cooldown
             if (cooldownTimer <= 0f)
             {
                 isReady = true;
                 if (cooldownFillImage != null) cooldownFillImage.fillAmount = 1f;
-                if (cooldownText != null) cooldownText.gameObject.SetActive(false); // Itago ang text kapag ready na
-                if (notReadyPrompt != null) notReadyPrompt.SetActive(false);
+                if (cooldownText != null) cooldownText.gameObject.SetActive(false);
             }
         }
 
-        // 2. Pagbato
-        if (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.F))
+        if ((Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.F)) && isReady)
         {
-            if (isReady)
-            {
-                Throw();
-            }
-            else
-            {
-                if (notReadyPrompt != null) notReadyPrompt.SetActive(true);
-            }
+            Throw();
         }
     }
 
     void Throw()
     {
+        if (lifebuoyPrefab == null) return;
+
         isReady = false;
         cooldownTimer = cooldownTime;
 
+        if (cooldownFillImage != null) cooldownFillImage.fillAmount = 0f;
+        if (cooldownText != null) cooldownText.gameObject.SetActive(true);
 
         if (TutorialTaskManager.instance != null)
         {
             TutorialTaskManager.instance.OnPlayerThrewBuoy();
         }
 
-        if (cooldownFillImage != null)
+        // 1. Mangagaling ang spawn sa posisyon ng mismong nagbato (Player) sa bandang dibdib
+        // 2. Ilalabas nang 1.5 meters sa direksyon kung saan nakaharap ang Camera
+        Vector3 spawnPos = transform.position + (Vector3.up * 1.2f) + (cam.forward * 1.5f);
+
+        // Patag na ikot
+        Quaternion spawnRotation = Quaternion.Euler(modelRotationOffset.x, cam.eulerAngles.y + modelRotationOffset.y, modelRotationOffset.z);
+        GameObject buoy = Instantiate(lifebuoyPrefab, spawnPos, spawnRotation);
+
+        // Kusang mawawala ang salbabida pagkatapos ng 'lifebuoyDuration' seconds
+        if (lifebuoyDuration > 0f)
         {
-            cooldownFillImage.fillAmount = 0f;
+            Destroy(buoy, lifebuoyDuration);
         }
 
-        if (cooldownText != null)
-        {
-            cooldownText.gameObject.SetActive(true);
-        }
-
-        Vector3 spawnPos = throwPoint != null ? throwPoint.position : cam.position + (cam.forward * 2f);
-        Quaternion flatRotation = Quaternion.Euler(0f, cam.eulerAngles.y, 0f);
-        GameObject buoy = Instantiate(lifebuoyPrefab, spawnPos, flatRotation);
-
+        // I-ignore ang colliders para hindi maipit sa Player o Bangka
         Collider buoyCol = buoy.GetComponent<Collider>();
         if (buoyCol != null)
         {
@@ -124,18 +112,19 @@ public class ThrowLifebuoy : MonoBehaviour
             }
         }
 
+        // I-apply ang malakas na hagis paharap
         Rigidbody buoyRb = buoy.GetComponent<Rigidbody>();
         if (buoyRb != null)
         {
-            buoyRb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+            // Siguraduhing walang tira-tirang puwersa
+            buoyRb.linearVelocity = Vector3.zero;
 
+            // Bawal tumaob
+            buoyRb.constraints = RigidbodyConstraints.FreezeRotation;
+
+            // Malakas na hagis sa direksyon ng Camera
             Vector3 forceDirection = (cam.forward * throwForce) + (Vector3.up * throwUpwardForce);
             buoyRb.AddForce(forceDirection, ForceMode.Impulse);
-
-            if (spinLikeFrisbee)
-            {
-                buoyRb.AddTorque(Vector3.up * spinSpeed, ForceMode.Impulse);
-            }
         }
     }
 }
