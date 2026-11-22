@@ -5,10 +5,10 @@ public class NPCSpawner : MonoBehaviour
     public static NPCSpawner instance;
 
     [Header("NPC Prefab")]
-    public GameObject drowningNpcPrefab;  // Ang bagong DrowningNPC_Fixed prefab mo
+    public GameObject drowningNpcPrefab;  // Ang DrowningNPC_Fixed prefab mo
 
     [Header("Spawn Count")]
-    public int totalNpcToSpawn = 3;       // Ilang tao ang gustong i-spawn
+    public int totalNpcToSpawn = 3;       // Bilang ng tao (hal. 3 sa Level 1, 5 sa Level 2)
 
     [Header("Spawn Boundaries (Lawak ng Sakop)")]
     public float minX = -650f;
@@ -18,8 +18,9 @@ public class NPCSpawner : MonoBehaviour
     public float spawnHeightY = 1.6f;     // Taas sa ibabaw ng baha
 
     [Header("Obstacle Avoidance")]
-    public float checkRadius = 2.5f;
-    public LayerMask obstacleLayer;
+    [Tooltip("Inirekomenda: 0.6 hanggang 0.8 para kasing-sukat lang ng tao at hindi humarang sa buong kalsada.")]
+    public float checkRadius = 0.7f;      // Pinaliliit para makapasok sa mga kalsada
+    public LayerMask obstacleLayer;       // Layer ng mga Bahay/Obstacles
 
     private bool hasSpawned = false;
 
@@ -30,14 +31,13 @@ public class NPCSpawner : MonoBehaviour
 
     void Start()
     {
-        // WALA NANG SPAWN SA SIMULA!
-        // Hihintayin natin ang tawag mula sa RescueManager.
+        // Walang spawn sa simula; mag-i-spawn kapag sumakay na sa bangka
     }
 
-    // TATAWAGIN ITO KAPAG SUMAKAY NA ANG PLAYER SA BANGKA MULA SA RESCUEMANAGER
+    // TATAWAGIN ITO NG RESCUEMANAGER KAPAG SUMAKAY SA BANGKA
     public void SpawnRandomNPCs()
     {
-        if (hasSpawned) return; // Iwasan ang pag-doble ng spawn kung sakaling matawag nang doble
+        if (hasSpawned) return;
         hasSpawned = true;
 
         if (drowningNpcPrefab == null)
@@ -47,58 +47,58 @@ public class NPCSpawner : MonoBehaviour
         }
 
         int successfullySpawned = 0;
-        int maxAttempts = 100; // Maximum attempts para hindi mag-infinite loop
+        int maxAttempts = totalNpcToSpawn * 60; // 300 attempts para sigurado ang paghahanap
         int currentAttempt = 0;
 
         while (successfullySpawned < totalNpcToSpawn && currentAttempt < maxAttempts)
         {
             currentAttempt++;
 
+            // 1. Kumuha ng random coordinate sa loob ng boundary
             float randomX = Random.Range(minX, maxX);
             float randomZ = Random.Range(minZ, maxZ);
             Vector3 randomPosition = new Vector3(randomX, spawnHeightY, randomZ);
 
-            // Suriin kung mayroong obstacle (gusali, puno, atbp.) sa posisyon na ito
-            bool hitObstacle = Physics.CheckSphere(randomPosition, checkRadius, obstacleLayer);
+            // 2. Suriin kung may nakaharang na bahay o pader
+            bool hitObstacle = false;
+            if (obstacleLayer != 0)
+            {
+                hitObstacle = Physics.CheckSphere(randomPosition, checkRadius, obstacleLayer);
+            }
 
+            // 3. Kung malinis at walang bahay, i-spawn ang NPC
             if (!hitObstacle)
             {
-                // Gamitin ang tamang rotation ng nakatayong prefab
                 Instantiate(drowningNpcPrefab, randomPosition, drowningNpcPrefab.transform.rotation);
                 successfullySpawned++;
-                Debug.Log($"NPCSpawner: Nag-spawn ng NPC sa {randomPosition} (Attempt {currentAttempt})");
-            }
-            else
-            {
-                // Opsyonal: Debug log kapag may natamaan na obstacle
-                // Debug.Log($"NPCSpawner: May nakitang obstacle sa {randomPosition}, nire-retry.");
             }
         }
 
         if (successfullySpawned < totalNpcToSpawn)
         {
-            Debug.LogWarning($"NPCSpawner: Nakapag-spawn lamang ng {successfullySpawned} sa {totalNpcToSpawn} na hiniling. Maaaring masyadongikid ang spawn area o masyadong mataas ang checkRadius.");
+            Debug.LogWarning($"NPCSpawner: Nakapag-spawn lamang ng {successfullySpawned} sa {totalNpcToSpawn}. Subukang gawing 0.6 ang checkRadius o palawakin ang Min/Max boundary.");
         }
         else
         {
-            Debug.Log($"SUCCESS: Naka-spawn ng kabuuang {successfullySpawned} drowning NPCs matapos sumakay sa bangka!");
+            Debug.Log($"SUCCESS: Naka-spawn ng kabuuang {successfullySpawned} drowning NPCs!");
         }
 
-        // --- INALIS NA ANG BAHAGI DITO ---
-        // Ang RescueManager na ang bahalang tumawag ng sarili nitong InitializeMissionStats
-        // pagkatapos nitong tawagin ang SpawnRandomNPCs().
-        // ---------------------------------
+        // Tiyaking ma-update agad ang stats sa RescueManager
+        if (RescueManager.instance != null)
+        {
+            RescueManager.instance.InitializeMissionStats();
+        }
     }
 
-    // Para makita mo ang spawn area sa Scene view kapag naka-select ang spawner
+    // Para makita ang dilaw na kahon sa Scene view kapag naka-click ang Spawner
     private void OnDrawGizmosSelected()
     {
-        Gizmos.color = new Color(1f, 1f, 0f, 0.3f); // Yellow na may transparency
+        Gizmos.color = new Color(1f, 1f, 0f, 0.25f);
         Vector3 center = new Vector3((minX + maxX) / 2f, spawnHeightY, (minZ + maxZ) / 2f);
         Vector3 size = new Vector3(Mathf.Abs(maxX - minX), 1f, Mathf.Abs(maxZ - minZ));
-        Gizmos.DrawCube(center, size); // Gamitin ang DrawCube para solid ang box
-        
+        Gizmos.DrawCube(center, size);
+
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireCube(center, size); // At outline
+        Gizmos.DrawWireCube(center, size);
     }
 }
