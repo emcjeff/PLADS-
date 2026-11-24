@@ -156,8 +156,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -125.8, y: 101}
-  m_SizeDelta: {x: 150, y: 50}
+  m_AnchoredPosition: {x: -154.61913, y: 101}
+  m_SizeDelta: {x: 199.4706, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &207323334
 MonoBehaviour:
@@ -265,7 +265,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 1, g: 1, b: 1, a: 0.5}
+  m_EffectColor: {r: 1, g: 0.8, b: 0, a: 0.5}
   m_EffectDistance: {x: 2, y: -2}
   m_UseGraphicAlpha: 1
 --- !u!1 &277580120
@@ -305,8 +305,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -125.8, y: -18}
-  m_SizeDelta: {x: 150, y: 50}
+  m_AnchoredPosition: {x: -155.407, y: -18}
+  m_SizeDelta: {x: 200.8231, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &277580122
 MonoBehaviour:
@@ -320,7 +320,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 1, g: 1, b: 1, a: 0.5}
+  m_EffectColor: {r: 1, g: 0.8, b: 0, a: 0.5}
   m_EffectDistance: {x: 2, y: -2}
   m_UseGraphicAlpha: 1
 --- !u!114 &277580123
@@ -1015,8 +1015,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -126, y: -136}
-  m_SizeDelta: {x: 150, y: 50}
+  m_AnchoredPosition: {x: -154.9935, y: -136}
+  m_SizeDelta: {x: 199.77, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &685905646
 MonoBehaviour:
@@ -1124,7 +1124,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 1, g: 1, b: 1, a: 0.5}
+  m_EffectColor: {r: 1, g: 0.8, b: 0, a: 0.5}
   m_EffectDistance: {x: 2, y: -2}
   m_UseGraphicAlpha: 1
 --- !u!1 &886585418
@@ -2064,8 +2064,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -96.5, y: 182.5}
-  m_SizeDelta: {x: 200, y: 50}
+  m_AnchoredPosition: {x: -132.28189, y: 182.5}
+  m_SizeDelta: {x: 271.5638, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1499830315
 MonoBehaviour:
@@ -2089,8 +2089,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: PLADS
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 586a25378e5160c428a195067b870321, type: 2}
-  m_sharedMaterial: {fileID: -7368343791751248216, guid: 586a25378e5160c428a195067b870321, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 7cc1608e29b97984fac774a477710607, type: 2}
+  m_sharedMaterial: {fileID: 3879042690578036198, guid: 7cc1608e29b97984fac774a477710607, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2289,7 +2289,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 1, g: 1, b: 1, a: 0.5}
+  m_EffectColor: {r: 1, g: 0.8, b: 0, a: 0.5}
   m_EffectDistance: {x: 2, y: -2}
   m_UseGraphicAlpha: 1
 --- !u!1 &1644746405
@@ -2330,8 +2330,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -128, y: -256}
-  m_SizeDelta: {x: 150, y: 50}
+  m_AnchoredPosition: {x: -156.88882, y: -256}
+  m_SizeDelta: {x: 199.5903, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1644746407
 MonoBehaviour:
@@ -2439,7 +2439,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 1, g: 1, b: 1, a: 0.5}
+  m_EffectColor: {r: 1, g: 0.8, b: 0, a: 0.5}
   m_EffectDistance: {x: 2, y: -2}
   m_UseGraphicAlpha: 1
 --- !u!114 &1644746411

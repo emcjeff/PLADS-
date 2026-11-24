@@ -110,7 +110,7 @@ public class TutorialTaskManager : MonoBehaviour
         currentStep = TaskStep.SearchSurvivors;
         if (taskText != null)
         {
-            taskText.text = "⚠️ Bumitaw ang survivor! Batuhan ulit ng salbabida!";
+            taskText.text = "Bumitaw ang survivor! Batuhan ulit ng salbabida!";
             taskText.color = Color.red;
         }
     }
@@ -173,7 +173,7 @@ public class TutorialTaskManager : MonoBehaviour
                 break;
 
             case TaskStep.AllTasksComplete:
-                taskText.text = "🎉 MISSION ACCOMPLISHED: Nailigtas mo ang lahat!";
+                taskText.text = "MISSION ACCOMPLISHED: Nailigtas mo ang lahat!";
                 taskText.color = Color.green;
                 break;
         }
