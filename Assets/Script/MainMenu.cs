@@ -4,9 +4,13 @@ using UnityEngine.UI;
 
 public class MainMenu : MonoBehaviour
 {
+    [Header("Scene Names (Tiyaking Eksakto ang Spelling!)")]
+    public string firstLevelSceneName = "level 1";   // Scene ng Level 1
+    public string tutorialSceneName = "Tutorial";    // Scene ng Interactive Tutorial
+
     [Header("Panels")]
-    public GameObject mainPanel;      // Yung may Play, Options, Quit
-    public GameObject optionsPanel;   // Yung may Volume, Graphics, Back
+    public GameObject mainPanel;
+    public GameObject optionsPanel;
 
     [Header("UI Controls")]
     public Slider volumeSlider;
@@ -18,27 +22,27 @@ public class MainMenu : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        // I-set ang UI base sa kasalukuyang settings ng PC
-        if (volumeSlider != null)
-        {
-            volumeSlider.value = AudioListener.volume;
-        }
+        if (volumeSlider != null) volumeSlider.value = AudioListener.volume;
+        if (fullscreenToggle != null) fullscreenToggle.isOn = Screen.fullScreen;
 
-        if (fullscreenToggle != null)
-        {
-            fullscreenToggle.isOn = Screen.fullScreen;
-        }
-
-        // Tiyaking nakasara ang options sa simula
         CloseOptions();
     }
 
-    // --- NAVIGATION ---
+    // --- BUTTON FUNCTIONS ---
+
+    // 1. PLAY GAME (Diretso sa Level 1)
     public void PlayGame()
     {
-        SceneManager.LoadScene("GameScene");
+        SceneManager.LoadScene(firstLevelSceneName);
     }
 
+    // 2. TUTORIAL BUTTON (Papasok sa Interactive Tutorial Scene)
+    public void PlayTutorial()
+    {
+        SceneManager.LoadScene(tutorialSceneName);
+    }
+
+    // 3. OPTIONS
     public void OpenOptions()
     {
         if (mainPanel != null) mainPanel.SetActive(false);
@@ -51,6 +55,7 @@ public class MainMenu : MonoBehaviour
         if (mainPanel != null) mainPanel.SetActive(true);
     }
 
+    // 4. EXIT
     public void QuitGame()
     {
         Debug.Log("Quit Game!");
@@ -58,20 +63,16 @@ public class MainMenu : MonoBehaviour
     }
 
     // --- SETTINGS CONTROLS ---
-
-    // 1. Audio Volume (0.0 hanggang 1.0)
     public void SetVolume(float volume)
     {
         AudioListener.volume = volume;
     }
 
-    // 2. Fullscreen Toggle (Check / Uncheck)
     public void SetFullscreen(bool isFullscreen)
     {
         Screen.fullScreen = isFullscreen;
     }
 
-    // 3. Graphics Quality (0: Low, 1: Medium, 2: High)
     public void SetQuality(int qualityIndex)
     {
         QualitySettings.SetQualityLevel(qualityIndex);

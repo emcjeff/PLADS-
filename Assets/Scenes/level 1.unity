@@ -41159,7 +41159,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e4c128e0828b9f54ea62203b8ddd18f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialTaskManager
-  skipTutorial: 0
+  skipTutorial: 1
   currentStep: 0
   taskText: {fileID: 1964479872}
   taskPanel: {fileID: 133213978}
@@ -41314,7 +41314,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SafeZone
   dropPoint: {fileID: 0}
+  peoplePerRow: 3
+  spacingX: 1.3
+  spacingZ: 1.3
   standHeightOffset: 1
+  customStandingSpots: []
 --- !u!65 &1453668316
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -58470,7 +58474,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BoatController
   rb: {fileID: 0}
-  autoBoardOnStart: 0
+  autoBoardOnStart: 1
   motorForce: 1500
   steerSpeed: 60
   maxSpeed: 20
