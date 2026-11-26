@@ -52,6 +52,30 @@ PrefabInstance:
       propertyPath: m_CastShadows
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: caa05eb373b9cce438bd081ed8576101, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 01cf202c9a02f0e46b180499c9c4c4ad, type: 2}
+    - target: {fileID: -7511558181221131132, guid: caa05eb373b9cce438bd081ed8576101, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 9465e862577010940bca87f3aea2c18e, type: 2}
+    - target: {fileID: -7511558181221131132, guid: caa05eb373b9cce438bd081ed8576101, type: 3}
+      propertyPath: 'm_Materials.Array.data[2]'
+      value: 
+      objectReference: {fileID: 2100000, guid: e8bfc6c111dca1744b17314f0f257c1e, type: 2}
+    - target: {fileID: -7511558181221131132, guid: caa05eb373b9cce438bd081ed8576101, type: 3}
+      propertyPath: 'm_Materials.Array.data[3]'
+      value: 
+      objectReference: {fileID: 2100000, guid: de3ef48ee4f9e8548b191a151dab8415, type: 2}
+    - target: {fileID: -7511558181221131132, guid: caa05eb373b9cce438bd081ed8576101, type: 3}
+      propertyPath: 'm_Materials.Array.data[5]'
+      value: 
+      objectReference: {fileID: 2100000, guid: e8bfc6c111dca1744b17314f0f257c1e, type: 2}
+    - target: {fileID: -7511558181221131132, guid: caa05eb373b9cce438bd081ed8576101, type: 3}
+      propertyPath: 'm_Materials.Array.data[6]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 129e07f0b5330294289dfeceadb5679c, type: 2}
     - target: {fileID: 919132149155446097, guid: caa05eb373b9cce438bd081ed8576101, type: 3}
       propertyPath: m_Name
       value: house-2F
