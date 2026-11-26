@@ -4,13 +4,14 @@ using UnityEngine.UI;
 
 public class MainMenu : MonoBehaviour
 {
-    [Header("Scene Names (Tiyaking Eksakto ang Spelling!)")]
-    public string firstLevelSceneName = "level 1";   // Scene ng Level 1
-    public string tutorialSceneName = "Tutorial";    // Scene ng Interactive Tutorial
+    [Header("Scene Names (Tiyaking Eksakto ang Spelling)")]
+    public string firstLevelSceneName = "level 1";
+    public string tutorialSceneName = "Tutorial";
 
     [Header("Panels")]
     public GameObject mainPanel;
     public GameObject optionsPanel;
+    public GameObject howToPlayPanel; // I-drag ang "OptionsPanel (1)" dito!
 
     [Header("UI Controls")]
     public Slider volumeSlider;
@@ -25,44 +26,55 @@ public class MainMenu : MonoBehaviour
         if (volumeSlider != null) volumeSlider.value = AudioListener.volume;
         if (fullscreenToggle != null) fullscreenToggle.isOn = Screen.fullScreen;
 
-        CloseOptions();
+        // Main menu lang ang nakabukas sa simula
+        ShowMainPanel();
     }
 
-    // --- BUTTON FUNCTIONS ---
+    // --- NAVIGATION ---
 
-    // 1. PLAY GAME (Diretso sa Level 1)
     public void PlayGame()
     {
         SceneManager.LoadScene(firstLevelSceneName);
     }
 
-    // 2. TUTORIAL BUTTON (Papasok sa Interactive Tutorial Scene)
+    public void OpenHowToPlay()
+    {
+        if (mainPanel != null) mainPanel.SetActive(false);
+        if (optionsPanel != null) optionsPanel.SetActive(false);
+        if (howToPlayPanel != null) howToPlayPanel.SetActive(true);
+    }
+
     public void PlayTutorial()
     {
         SceneManager.LoadScene(tutorialSceneName);
     }
 
-    // 3. OPTIONS
     public void OpenOptions()
     {
         if (mainPanel != null) mainPanel.SetActive(false);
+        if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
         if (optionsPanel != null) optionsPanel.SetActive(true);
+    }
+
+    public void ShowMainPanel()
+    {
+        if (optionsPanel != null) optionsPanel.SetActive(false);
+        if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
+        if (mainPanel != null) mainPanel.SetActive(true);
     }
 
     public void CloseOptions()
     {
-        if (optionsPanel != null) optionsPanel.SetActive(false);
-        if (mainPanel != null) mainPanel.SetActive(true);
+        ShowMainPanel();
     }
 
-    // 4. EXIT
     public void QuitGame()
     {
         Debug.Log("Quit Game!");
         Application.Quit();
     }
 
-    // --- SETTINGS CONTROLS ---
+    // --- SETTINGS ---
     public void SetVolume(float volume)
     {
         AudioListener.volume = volume;

@@ -10,20 +10,20 @@ public class DrowningNPC : MonoBehaviour
     public NPCState currentState = NPCState.Drowning;
 
     [Header("Stamina / Grip Settings")]
-    public float maxStamina = 12f;
+    public float maxStamina = 15f;           // Oras bago mag-panic kung hindi agad nahatak
     public float currentStamina;
-    public float pickupDistance = 4.5f;
+    public float pickupDistance = 4.5f;      // Layo sa bangka bago kusa sumampa
 
     [Header("Panic Settings")]
     public int hitsToCalm = 2;               // Ilang bato ng salbabida bago kumalma
     private int currentHits = 0;
-    public float panicSwimSpeed = 2.5f;      // Bilis ng paglangoy habang nagpapanic
+    public float panicSwimSpeed = 2.5f;      // Bilis ng pag-iwas habang nagpapanic
     public float panicStruggleSpeed = 10f;
-    
+
     [Header("Panic Boundary (Limitasyon ng Layas)")]
     [Tooltip("Hanggang ilang metro lang ang pwede niyang layuin mula sa pwesto niya")]
-    public float panicRadius = 3.5f;         // 3.5 METERS LANG ANG RADIUS!
-    private Vector3 panicAnchorPos;          // Dito siya nakatali
+    public float panicRadius = 3.5f;
+    private Vector3 panicAnchorPos;
     private Vector2 randomWanderDirection;
     private float changeDirectionTimer = 0f;
 
@@ -76,12 +76,14 @@ public class DrowningNPC : MonoBehaviour
         }
     }
 
+    // 1. HABANG NALULUNOD SA TUBIG
     void HandleDrowning()
     {
         float newY = startPos.y + Mathf.Sin(Time.time * struggleSpeed) * struggleHeight;
         transform.position = new Vector3(startPos.x, newY, startPos.z);
     }
 
+    // 2. HABANG NAKA-HOOK AT HINAHATAK NG SALBABIDA
     void HandleHoldingBuoy()
     {
         BillboardToCamera();
@@ -98,10 +100,11 @@ public class DrowningNPC : MonoBehaviour
 
         if (meterStatusText != null)
         {
-            meterStatusText.text = "HOLDING ON!";
+            meterStatusText.text = "HOOKED! REEL IN!";
             meterStatusText.color = Color.white;
         }
 
+        // Kapag nahatak na palapit sa bangka -> SUMAMPA NA SA BANGKA!
         if (boat != null)
         {
             float distanceToBoat = Vector3.Distance(transform.position, boat.transform.position);
@@ -112,27 +115,28 @@ public class DrowningNPC : MonoBehaviour
             }
         }
 
+        // Kapag naubos ang oras bago mahatak -> MAG-PANIC!
         if (currentStamina <= 0f)
         {
             TriggerPanicState();
         }
     }
 
-    // --- HARD-CLAMPED PANIC MOVEMENT ---
+    // 3. HABANG NAG-PAPANIC (Limitado sa loob ng panicRadius)
     void HandlePanicking()
     {
         BillboardToCamera();
 
-        // 1. Magulong pag-alon
         float newY = startPos.y + Mathf.Sin(Time.time * panicStruggleSpeed) * (struggleHeight * 1.5f);
 
-        // 2. Pagpili ng direksyon
         changeDirectionTimer -= Time.deltaTime;
         if (changeDirectionTimer <= 0f)
         {
-            float distFromAnchor = Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(panicAnchorPos.x, panicAnchorPos.z));
-            
-            // Kapag malapit na sa dulo ng 3.5m radius, pabalikin sa gitna
+            float distFromAnchor = Vector2.Distance(
+                new Vector2(transform.position.x, transform.position.z),
+                new Vector2(panicAnchorPos.x, panicAnchorPos.z)
+            );
+
             if (distFromAnchor >= panicRadius * 0.8f)
             {
                 Vector2 backToCenter = (new Vector2(panicAnchorPos.x, panicAnchorPos.z) - new Vector2(transform.position.x, transform.position.z)).normalized;
@@ -146,11 +150,10 @@ public class DrowningNPC : MonoBehaviour
             changeDirectionTimer = Random.Range(0.8f, 1.5f);
         }
 
-        // 3. I-apply ang galaw
         Vector3 moveOffset = new Vector3(randomWanderDirection.x, 0f, randomWanderDirection.y) * panicSwimSpeed * Time.deltaTime;
         Vector3 targetPos = transform.position + moveOffset;
 
-        // HARD CLAMP: Bawal lumagpas sa 3.5 meters kailanman!
+        // Hard Clamp: Bawal lumagpas sa radius
         Vector3 offset = targetPos - panicAnchorPos;
         offset.y = 0f;
         if (offset.magnitude > panicRadius)
@@ -160,11 +163,23 @@ public class DrowningNPC : MonoBehaviour
 
         transform.position = new Vector3(panicAnchorPos.x + offset.x, newY, panicAnchorPos.z + offset.z);
 
-        // 4. Kislap ng Panic Meter
+        // Kumikislap na Pulang Panic Meter
         if (fillImage != null)
         {
             float pulse = Mathf.PingPong(Time.time * 6f, 1f);
             fillImage.color = Color.Lerp(Color.red, new Color(1f, 0.4f, 0f), pulse);
+        }
+    }
+
+    // TATAWAGIN NG THROWLIFEBUOY KAPAG NAPUTOL ANG LUBID DAHIL SA SOBRANG TENSION
+    public void OnRopeSnapped()
+    {
+        TriggerPanicState();
+
+        if (TutorialTaskManager.instance != null && TutorialTaskManager.instance.taskText != null)
+        {
+            TutorialTaskManager.instance.taskText.text = $"NAPUTOL ANG LUBID! Nag-panic ang survivor! Batuhin ng {hitsToCalm} beses!";
+            TutorialTaskManager.instance.taskText.color = Color.red;
         }
     }
 
@@ -173,23 +188,32 @@ public class DrowningNPC : MonoBehaviour
         currentState = NPCState.Panicking;
         currentHits = 0;
 
-        // I-lock ang pwesto kung saan siya nag-panic para hindi lumayo rito
         panicAnchorPos = new Vector3(transform.position.x, startPos.y, transform.position.z);
 
-        if (attachedBuoy != null) Destroy(attachedBuoy);
+        // Itigil ang screen timer dahil pumasok na sa Panic mode
+        if (RescueManager.instance != null)
+        {
+            RescueManager.instance.StopRescueTimer();
+        }
+
+        if (attachedBuoy != null)
+        {
+            Destroy(attachedBuoy);
+            attachedBuoy = null;
+        }
 
         if (staminaCanvas != null) staminaCanvas.SetActive(true);
         if (staminaSlider != null) staminaSlider.value = 1f;
 
         if (meterStatusText != null)
         {
-            meterStatusText.text = "⚠️ PANICKING!";
+            meterStatusText.text = "PANICKING!";
             meterStatusText.color = Color.red;
         }
 
-        if (TutorialTaskManager.instance != null)
+        if (TutorialTaskManager.instance != null && TutorialTaskManager.instance.taskText != null)
         {
-            TutorialTaskManager.instance.taskText.text = $"⚠️ NAG-PANIC ANG SURVIVOR! Batuhin ng {hitsToCalm} beses para kumalma!";
+            TutorialTaskManager.instance.taskText.text = $"NAG-PANIC ANG SURVIVOR! Batuhin ng {hitsToCalm} beses para kumalma!";
             TutorialTaskManager.instance.taskText.color = Color.red;
         }
     }
@@ -216,7 +240,6 @@ public class DrowningNPC : MonoBehaviour
     void HandlePanicHit(GameObject buoyObj)
     {
         currentHits++;
-        Destroy(buoyObj);
 
         float panicRemaining = 1f - ((float)currentHits / hitsToCalm);
         if (staminaSlider != null) staminaSlider.value = panicRemaining;
@@ -225,8 +248,10 @@ public class DrowningNPC : MonoBehaviour
 
         if (remainingHits > 0)
         {
+            Destroy(buoyObj);
+
             if (meterStatusText != null) meterStatusText.text = $"PANIC: {remainingHits} HIT LEFT!";
-            if (TutorialTaskManager.instance != null)
+            if (TutorialTaskManager.instance != null && TutorialTaskManager.instance.taskText != null)
             {
                 TutorialTaskManager.instance.taskText.text = $"TUMAMA! {remainingHits} bato na lang bago kumalma!";
                 TutorialTaskManager.instance.taskText.color = Color.yellow;
@@ -234,25 +259,8 @@ public class DrowningNPC : MonoBehaviour
         }
         else
         {
-            CalmDownFromPanic();
-        }
-    }
-
-    void CalmDownFromPanic()
-    {
-        currentState = NPCState.HoldingBuoy;
-        startPos = transform.position;
-        currentStamina = maxStamina;
-
-        if (meterStatusText != null)
-        {
-            meterStatusText.text = "CALMED DOWN!";
-            meterStatusText.color = Color.green;
-        }
-
-        if (TutorialTaskManager.instance != null)
-        {
-            TutorialTaskManager.instance.OnBuoyAttachedToNPC();
+            // SA HULING TAMA: Kumalma na siya at I-HOOK NA AGAD ang salbabidang tumama!
+            GrabBuoy(buoyObj);
         }
     }
 
@@ -260,10 +268,17 @@ public class DrowningNPC : MonoBehaviour
     {
         currentState = NPCState.HoldingBuoy;
         attachedBuoy = buoy;
+        startPos = transform.position;
 
-        attachedBuoy.transform.SetParent(transform);
-        attachedBuoy.transform.localPosition = new Vector3(0f, -0.2f, 0f);
-        attachedBuoy.transform.localRotation = Quaternion.identity;
+        Lifebuoy buoyScript = attachedBuoy.GetComponent<Lifebuoy>();
+        if (buoyScript != null)
+        {
+            buoyScript.AttachToNPC(this);
+        }
+
+        // Ikabit sa bewang ng NPC nang hindi binabaligtad ang patag nitong rotation
+        attachedBuoy.transform.SetParent(transform, true);
+        attachedBuoy.transform.localPosition = new Vector3(0f, 0.8f, 0f);
 
         currentStamina = maxStamina;
 
@@ -275,6 +290,13 @@ public class DrowningNPC : MonoBehaviour
         }
     }
 
+    // Tinatawag ng ThrowLifebuoy habang hinahatak para hindi mag-snap back ang NPC
+    public void UpdateAnchorPosition(Vector3 newPos)
+    {
+        startPos = newPos;
+        panicAnchorPos = newPos;
+    }
+
     void BoardBoat()
     {
         currentState = NPCState.Rescued;
@@ -283,7 +305,13 @@ public class DrowningNPC : MonoBehaviour
         if (col != null) col.enabled = false;
 
         if (RescueManager.instance != null) RescueManager.instance.StopRescueTimer();
-        if (attachedBuoy != null) Destroy(attachedBuoy);
+
+        if (attachedBuoy != null)
+        {
+            Destroy(attachedBuoy);
+            attachedBuoy = null;
+        }
+
         if (boat != null) boat.AddPassenger(transform);
         if (RescueManager.instance != null) RescueManager.instance.SurvivorSaved();
         if (TutorialTaskManager.instance != null) TutorialTaskManager.instance.OnSurvivorBoardedBoat();
@@ -297,10 +325,12 @@ public class DrowningNPC : MonoBehaviour
         }
     }
 
-    // Makikita mo ang pulang bilog na hangganan sa Scene view kapag naka-click ang NPC!
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(Application.isPlaying ? panicAnchorPos : transform.position, panicRadius);
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(transform.position, pickupDistance);
     }
 }

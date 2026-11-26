@@ -163,7 +163,7 @@ public class TutorialTaskManager : MonoBehaviour
                 break;
 
             case TaskStep.ApproachSurvivor:
-                taskText.text = "TASK 5: MABILIS! Lapitan ang nalulunod gamit ang bangka para maisakay!";
+                taskText.text = "TASK 5: NA-HOOK! I-hold ang [Right Click] o [R] para hatakin siya sa bangka!";
                 taskText.color = Color.yellow;
                 break;
 
