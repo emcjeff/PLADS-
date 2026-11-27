@@ -71,7 +71,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DrowningNPC
   currentState: 0
-  maxStamina: 15
+  maxStamina: 8
   currentStamina: 0
   pickupDistance: 4.5
   hitsToCalm: 2
